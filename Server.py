@@ -1,4 +1,5 @@
 import socket
+import time 
 
 def calculate_checksum(data):
     checksum = 0
@@ -32,12 +33,17 @@ def main():
      # Receive data from client
     expected_sequence_number = 0
     while True:
+        time.sleep(1)
         data, client_address = server_socket.recvfrom(1024)
         received_sequence_number, received_checksum, message = data.decode().split('|')
         
         received_checksum = int(received_checksum)
         calculated_checksum = calculate_checksum(message)
-
+        # print("seq: " , received_sequence_number," type: ",type(received_sequence_number))
+        # print("checksum: " , received_checksum," type: ",type(received_checksum))
+        # print("Expected seq: " , str(expected_sequence_number)," type: ", type(expected_sequence_number))
+        # print("Calculated checksum: ", calculated_checksum," type: ", type(calculated_checksum))
+        # print("Message: ", message," type: ", type(message))
         if received_sequence_number == str(expected_sequence_number) and received_checksum == calculated_checksum:
             print("Received:", message)
             # Send ACK
