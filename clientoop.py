@@ -7,9 +7,11 @@ class UDP_client_side:
         for char in data:
             checksum += ord(char)
         return checksum
+    def __createsocket(self):
+        self._client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     def __init__(self, server_host='localhost', server_port=9999):
         self._server_address = (server_host, server_port)
-        self._client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.__createsocket()
     def _handshake(self):
         print("Trying to connect with server....")
         self._client_socket.sendto("Ahlan".encode(), self._server_address)
@@ -18,6 +20,25 @@ class UDP_client_side:
             if data.decode() == "ACK":
                 print("Handshake successful.")
                 break
+    def _send_http_request(self, request):
+        self.__createsocket()
+        self._handshake()
+        self._client_socket.sendto(request.encode(), self._server_address)
+        response, _ = self._client_socket.recvfrom(1024)
+        print(response.decode())
+        print(f"clossing connection with server {self._server_address[0]}..")
+        self._client_socket.close()
+        print("connection clossed succesfully")
+
+    # Implement HTTP GET method
+    def http_get(self, path):
+        request = f"GET|{path}|HTTP/1.0\r\n\r\n"
+        self._send_http_request(request)
+
+    # Implement HTTP POST method
+    def http_post(self, path, data):
+        request = f"POST|{path}|HTTP/1.0\r\n\r\n|{data}"
+        self._send_http_request(request)
     def packing_message_to_be_send(self, message,sequence_number):
         checksum = self._calculate_checksum(message)
         packet = f"{sequence_number[0]}|{checksum}|{message}"
