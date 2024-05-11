@@ -50,10 +50,13 @@ class UDP_server_side:
                 self._server_socket.sendto("ACK".encode(), self._current_client)
                 break
         print("Connection established.")
-
+    def _handle_headers_http(self,headers):
+        return ""
     def _handle_http_requests(self, data):
+        print(data,"de eldata")
         method = data[0]
         path = data[1]
+        headers=data[3]
         if method == "GET":
             try:
                 with open(os.getcwd() + path.strip(), 'r') as file:
@@ -66,6 +69,16 @@ class UDP_server_side:
             response = f"HTTP/1.0 200 OK\r\nContent-Length: {len(body)}\r\n\r\n{body}"
         else:
             response = "HTTP/1.0 400 Bad Request\r\n\r\nUnsupported Method"
+        if headers=='True':
+            headers_dict = {}
+            headers_list = data[4].split('\r\n')
+            for header in headers_list:
+            # Split each line by ':'
+                key, value = header.split(':')
+            # Add key-value pair to the dictionary
+                headers_dict[key] = value
+            print("de el headers",headers_dict)
+            response+= " headers response"+self._handle_headers_http(headers_dict)
         self._server_socket.sendto(response.encode(), self._current_client)
 
     def _run_detect_intterupts(self, function):

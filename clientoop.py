@@ -19,9 +19,9 @@ class UDP_client_side:
         self._server_address = (server_host, server_port)
         self.__createsocket()
         self._connectiontype = True if connection_type == "persistent" else False
-        self._first_persistent_hanshake=True
-        self._sequence_number=[0]
-        self._current_communication=None
+        self._first_persistent_hanshake = True
+        self._sequence_number = [0]
+        self._current_communication = None
         # Register keyboard shortcut for Ctrl+F2
         # keyboard.add_hotkey('ctrl+f2', self._handle_ctrl_f2)
         # signal.signal(signal.SIGINT, self._handle_interrupt)
@@ -56,14 +56,19 @@ class UDP_client_side:
                 print("Handshake successful.")
                 break
 
-    def _send_http_request(self, request):
-        self._current_communication="http"
+    def _send_http_request(self, request, headers):
+        self._current_communication = "http"
         if not self._connectiontype:
             self.__createsocket()
             self._handshake()
-        if self._first_persistent_hanshake and self._connectiontype :
+        if self._first_persistent_hanshake and self._connectiontype:
             self._handshake()
-            self._first_persistent_hanshake=False
+            self._first_persistent_hanshake = False
+        if headers:
+            request += f"|{True}|"
+            request += "\r\n".join([f"{key}:{value}" for key, value in headers.items()])
+        else:
+            request += f"|{False}"
         self._client_socket.sendto(request.encode(), self._server_address)
         response, _ = self._client_socket.recvfrom(1024)
         print(response.decode())
@@ -73,14 +78,14 @@ class UDP_client_side:
             print("connection clossed succesfully")
 
     # Implement HTTP GET method
-    def http_get(self, path):
+    def http_get(self, path, headers):
         request = f"GET|{path}|HTTP/1.0\r\n\r\n"
-        self._send_http_request(request)
+        self._send_http_request(request, headers)
 
     # Implement HTTP POST method
-    def http_post(self, path, data):
+    def http_post(self, path, data,headers):
         request = f"POST|{path}|HTTP/1.0\r\n\r\n|{data}"
-        self._send_http_request(request)
+        self._send_http_request(request,headers)
 
     def packing_message_to_be_send(self, message, sequence_number):
         checksum = self._calculate_checksum(message)
@@ -113,7 +118,7 @@ class UDP_client_side:
     def send_message(self, message=None):
         self._handshake()
         self._sequence_number = [0]
-        self._current_communication="message"
+        self._current_communication = "message"
         if message:
             packet = self.packing_message_to_be_send(message, self._sequence_number)
             self.validate_message_sending(self._sequence_number, packet, message)
