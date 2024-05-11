@@ -66,7 +66,7 @@ class UDP_client_side:
             self._first_persistent_hanshake = False
         if headers:
             request += f"|{True}|"
-            request += "\r\n".join([f"{key}:{value}" for key, value in headers.items()])
+            request += "\r\n".join([f"{key.lower()}:{value}" for key, value in headers.items()])
         else:
             request += f"|{False}"
         self._client_socket.sendto(request.encode(), self._server_address)

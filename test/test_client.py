@@ -3,7 +3,7 @@ from clientoop import UDP_client_side as client
 client=client("localhost",8888,"non-persistent")
 
 headers = {
-    "User-Agent": "MyCustomUserAgent",
+    "User-Agent": "Mozilla",#Mozilla MyCustomUserAgent
     "Accept": "text/html",
     "Content-Type": "application/json"
 }

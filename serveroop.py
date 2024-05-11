@@ -50,13 +50,70 @@ class UDP_server_side:
                 self._server_socket.sendto("ACK".encode(), self._current_client)
                 break
         print("Connection established.")
-    def _handle_headers_http(self,headers):
-        return ""
+
+    def _handle_headers_http(self, headers):
+        response = ""
+        flag=True
+            # Handle User-Agent header
+        if 'user-agent' in headers:
+            user_agent = headers['user-agent']
+            if 'Mozilla' in user_agent:
+                response += "Hello User! from Mozilla\n"
+            else:
+                flag=False
+                response = "HTTP/1.1 404 Not Found\r\n\r\nUser-Agent not supported."
+                return response,flag
+
+            # Handle Accept header
+        if 'accept' in headers:
+            accept_header = headers['accept']
+            if 'text/html' in accept_header:
+                response += "<html><body>Hello HTML!</body></html>\n"
+            elif 'application/json' in accept_header:
+                response += "{\"message\": \"Hello JSON!\"}\n"
+            else:
+                flag=False
+                response = "HTTP/1.1 406 Not Acceptable\r\n\r\nContent type not supported."
+                return response,flag
+
+            # Handle Referer header
+        if 'referer' in headers:
+            referer = headers['referer']
+            if 'example.com' in referer:
+                response += "Welcome from example.com!"
+            else:
+                flag=False
+                response = "HTTP/1.1 403 Forbidden\r\n\r\nAccess forbidden from this Referer."
+                return response,flag
+
+            # Handle Custom-Header
+        if 'custom-header' in headers:
+            custom_header = headers['custom-header']
+            if custom_header == 'value':
+                response += "Custom header value accepted!\n"
+            else:
+                flag=False
+                response = "HTTP/1.1 400 Bad Request\r\n\r\nInvalid value for Custom-Header."
+                return response,flag
+
+        return response,flag
+
     def _handle_http_requests(self, data):
-        print(data,"de eldata")
         method = data[0]
         path = data[1]
         headers=data[3]
+        response_headers=None
+        if headers=='True':
+            headers_dict = {}
+            headers_list = data[4].split('\r\n')
+            for header in headers_list:
+            # Split each line by ':'
+                key, value = header.split(':')
+            # Add key-value pair to the dictionary
+                headers_dict[key] = value
+            response_headers,flag=self._handle_headers_http(headers_dict)
+            if not flag:
+                self._server_socket.sendto(response_headers.encode(), self._current_client)
         if method == "GET":
             try:
                 with open(os.getcwd() + path.strip(), 'r') as file:
@@ -69,17 +126,11 @@ class UDP_server_side:
             response = f"HTTP/1.0 200 OK\r\nContent-Length: {len(body)}\r\n\r\n{body}"
         else:
             response = "HTTP/1.0 400 Bad Request\r\n\r\nUnsupported Method"
-        if headers=='True':
-            headers_dict = {}
-            headers_list = data[4].split('\r\n')
-            for header in headers_list:
-            # Split each line by ':'
-                key, value = header.split(':')
-            # Add key-value pair to the dictionary
-                headers_dict[key] = value
-            print("de el headers",headers_dict)
-            response+= " headers response"+self._handle_headers_http(headers_dict)
+        if response_headers:
+            response += "\nheaders responses:\n" + response_headers
         self._server_socket.sendto(response.encode(), self._current_client)
+
+
 
     def _run_detect_intterupts(self, function):
         try:
