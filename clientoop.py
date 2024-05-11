@@ -1,5 +1,8 @@
+import signal
 import socket
+import sys
 import time
+import keyboard
 
 
 class UDP_client_side:
@@ -17,6 +20,32 @@ class UDP_client_side:
         self.__createsocket()
         self._connectiontype = True if connection_type == "persistent" else False
         self._first_persistent_hanshake=True
+        self._sequence_number=[0]
+        self._current_communication=None
+        # Register keyboard shortcut for Ctrl+F2
+        # keyboard.add_hotkey('ctrl+f2', self._handle_ctrl_f2)
+        # signal.signal(signal.SIGINT, self._handle_interrupt)
+
+    # def _handle_ctrl_f2(self):
+    #     print("\nCtrl+F2 pressed. Closing connection...")
+    #     if not self._connectiontype:
+    #         if self._current_communication=="message":
+    #             self.close(self._sequence_number)
+    #         else:
+    #             self._client_socket.close()
+    #     else:
+    #         self._client_socket.close()
+    #     sys.exit(0)
+    # def _handle_interrupt(self, signum, frame):
+    #     print("\nCtrl+C pressed. Closing connection...")
+    #     if not self._connectiontype:
+    #         if self._current_communication=="message":
+    #             self.close(self._sequence_number)
+    #         else:
+    #             self._client_socket.close()
+    #     else:
+    #         self._client_socket.close()
+    #     sys.exit(0)
 
     def _handshake(self):
         print("Trying to connect with server....")
@@ -28,6 +57,7 @@ class UDP_client_side:
                 break
 
     def _send_http_request(self, request):
+        self._current_communication="http"
         if not self._connectiontype:
             self.__createsocket()
             self._handshake()
@@ -82,13 +112,14 @@ class UDP_client_side:
 
     def send_message(self, message=None):
         self._handshake()
-        sequence_number = [0]
+        self._sequence_number = [0]
+        self._current_communication="message"
         if message:
-            packet = self.packing_message_to_be_send(message, sequence_number)
-            self.validate_message_sending(sequence_number, packet, message)
+            packet = self.packing_message_to_be_send(message, self._sequence_number)
+            self.validate_message_sending(self._sequence_number, packet, message)
         else:
             for i in range(5):
                 message = f"Message {i}"
-                packet = self.packing_message_to_be_send(message, sequence_number)
-                self.validate_message_sending(sequence_number, packet, message)
-        self.close(sequence_number)
+                packet = self.packing_message_to_be_send(message, self._sequence_number)
+                self.validate_message_sending(self._sequence_number, packet, message)
+        self.close(self._sequence_number)

@@ -1,6 +1,11 @@
+import signal
 import socket
+import sys
 import time
 import os
+
+import keyboard
+
 
 class UDP_server_side:
     def _calculate_checksum(self, data):
@@ -14,8 +19,21 @@ class UDP_server_side:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._server_socket.bind(self._server_address)
         self._current_client = None
-        self._connection_type=None
-        self._connect()
+        self._connection_type = None
+        # signal.signal(signal.SIGINT, self._handle_interrupt)
+        #
+        # keyboard.add_hotkey('ctrl+f2', self._handle_ctrl_f2)
+        self._run_detect_intterupts(self._connect)
+
+    # def _handle_interrupt(self, signum, frame):
+    #     print("\nCtrl+C pressed. Closing connection...")
+    #     self.close()
+    #     sys.exit(0)
+    #
+    # def _handle_ctrl_f2(self):
+    #     print("\nCtrl+F2 c pressed. Closing connection...")
+    #     self.close()
+    #     sys.exit(0)
 
     def close(self):
         self._server_socket.close()
@@ -24,32 +42,42 @@ class UDP_server_side:
         print("Server is waiting for connection...")
         while True:
             data, self._current_client = self._server_socket.recvfrom(1024)
-            data=data.decode().split('|')
+            data = data.decode().split('|')
             if data[0] == "start":
-                self._connection_type= True if data[1]=='True' else False
+                self._connection_type = True if data[1] == 'True' else False
                 self._server_socket.settimeout(10) if self._connection_type else self._server_socket.settimeout(None)
                 print(f"Received handshake from {self._current_client}")
                 self._server_socket.sendto("ACK".encode(), self._current_client)
                 break
         print("Connection established.")
-    def _handle_http_requests(self,data):
-        method=data[0]
-        path=data[1]
+
+    def _handle_http_requests(self, data):
+        method = data[0]
+        path = data[1]
         if method == "GET":
             try:
-                with open(os.getcwd()+path.strip(), 'r') as file:
+                with open(os.getcwd() + path.strip(), 'r') as file:
                     response_body = file.read()
                 response = f"HTTP/1.0 200 OK\r\nContent-Length: {len(response_body)}\r\n\r\n{response_body}"
             except FileNotFoundError:
                 response = "HTTP/1.0 404 Not Found\r\n\r\nFile Not Found"
         elif method == "POST":
-            body=data[3]
+            body = data[3]
             response = f"HTTP/1.0 200 OK\r\nContent-Length: {len(body)}\r\n\r\n{body}"
         else:
             response = "HTTP/1.0 400 Bad Request\r\n\r\nUnsupported Method"
         self._server_socket.sendto(response.encode(), self._current_client)
 
-    def run(self):
+    def _run_detect_intterupts(self, function):
+        try:
+            print("inside")
+            function()
+        except KeyboardInterrupt:
+            print("interrupt to terminate ...clossing server")
+            self._server_socket.close()
+            sys.exit(0)
+
+    def _run_internal(self):
         global data, client_address
         expected_sequence_number = 0
         while True:
@@ -85,3 +113,6 @@ class UDP_server_side:
                 print(f"currently clossing connection for {self._current_client}")
                 expected_sequence_number = 0
                 self._connect()
+
+    def run(self):
+        self._run_detect_intterupts(self._run_internal)
