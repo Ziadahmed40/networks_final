@@ -99,6 +99,7 @@ class UDP_client_side:
                 print(f"ACK received for message: {message}")
                 sequence_number[0] = 1 - sequence_number[0]  # Toggle sequence number
                 break
+                # return
             else:
                 print("Timeout or NACK received. Retransmitting packet...")
                 self._client_socket.sendto(packet.encode(), server_address)
@@ -123,3 +124,16 @@ class UDP_client_side:
                 packet = self.packing_message_to_be_send(message, self._sequence_number)
                 self.validate_message_sending(self._sequence_number, packet, message)
         self.close(self._sequence_number)
+    def stop_and_wait(self, messages):
+        self._handshake()
+        sequence_number = [0]
+
+        for message in messages:
+            packet = self.packing_message_to_be_send(message, sequence_number)
+            # Wait for acknowledgment before sending the next message
+            while True:
+                time.sleep(1)
+                self.validate_message_sending(sequence_number, packet, message)
+                break
+
+        self.close(sequence_number)

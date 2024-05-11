@@ -102,12 +102,14 @@ class UDP_server_side:
                 print("Received:", message if message != "close" else "ending connection protocol")
                 # Send ACK
                 ack_message = f"ACK|{expected_sequence_number}"
+                print("sending acknowledgement message..",ack_message)
                 self._server_socket.sendto(ack_message.encode(), client_address)
                 expected_sequence_number = 1 - expected_sequence_number  # Toggle sequence number
             else:
                 print("Packet loss or corrupted data. Retransmitting ACK...")
                 # Send NACK
                 nack_message = f"NACK|{1 - expected_sequence_number}"
+                print("sending Nacknowledgement message..",nack_message)
                 self._server_socket.sendto(nack_message.encode(), client_address)
             if message == "close":
                 print(f"currently clossing connection for {self._current_client}")
