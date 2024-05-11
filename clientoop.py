@@ -49,7 +49,7 @@ class UDP_client_side:
 
     def _handshake(self):
         print("Trying to connect with server....")
-        self._client_socket.sendto(f"start|{self._connectiontype}".encode(), self._server_address)
+        self._client_socket.sendto(f"Ahlan|{self._connectiontype}".encode(), self._server_address)
         while True:
             data, server_address = self._client_socket.recvfrom(1024)
             if data.decode() == "ACK":

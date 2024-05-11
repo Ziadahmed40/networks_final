@@ -43,7 +43,7 @@ class UDP_server_side:
         while True:
             data, self._current_client = self._server_socket.recvfrom(1024)
             data = data.decode().split('|')
-            if data[0] == "start":
+            if data[0] == "Ahlan":
                 self._connection_type = True if data[1] == 'True' else False
                 self._server_socket.settimeout(10) if self._connection_type else self._server_socket.settimeout(None)
                 print(f"Received handshake from {self._current_client}")
