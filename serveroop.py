@@ -14,6 +14,7 @@ class UDP_server_side:
         self._server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._server_socket.bind(self._server_address)
         self._current_client = None
+        self._connection_type=None
         self._connect()
 
     def close(self):
@@ -23,7 +24,10 @@ class UDP_server_side:
         print("Server is waiting for connection...")
         while True:
             data, self._current_client = self._server_socket.recvfrom(1024)
-            if data.decode() == "Ahlan":
+            data=data.decode().split('|')
+            if data[0] == "start":
+                self._connection_type= True if data[1]=='True' else False
+                self._server_socket.settimeout(10) if self._connection_type else self._server_socket.settimeout(None)
                 print(f"Received handshake from {self._current_client}")
                 self._server_socket.sendto("ACK".encode(), self._current_client)
                 break
@@ -46,14 +50,22 @@ class UDP_server_side:
         self._server_socket.sendto(response.encode(), self._current_client)
 
     def run(self):
+        global data, client_address
         expected_sequence_number = 0
         while True:
             time.sleep(1)
-            data, client_address = self._server_socket.recvfrom(1024)
+            try:
+                data, client_address = self._server_socket.recvfrom(1024)
+            except socket.timeout:
+                print(f"time out ..closing peristent conection with {self._current_client}")
+                self._server_socket.settimeout(None)
+                self._connect()
+                continue
             if "HTTP/1.0\r\n\r\n" in data.decode().split('|'):
                 self._handle_http_requests(data.decode().split('|'))
-                print(f"currently clossing connection for {self._current_client}")
-                self._connect()
+                if not self._connection_type:
+                    print(f"currently clossing connection for {self._current_client}")
+                    self._connect()
                 continue
             received_sequence_number, received_checksum, message = data.decode().split('|')
             received_checksum = int(received_checksum)
