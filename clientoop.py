@@ -2,7 +2,8 @@ import signal
 import socket
 import sys
 import time
-import keyboard
+
+import random
 
 
 class UDP_client_side:
@@ -47,6 +48,23 @@ class UDP_client_side:
     #         self._client_socket.close()
     #     sys.exit(0)
 
+    def simulate_packet_loss(self):
+        loss_probability = 0.1  # Example: 10% packet loss probability
+        random_number = random.random()
+        print("Random number:", random_number)
+        if random_number < loss_probability:
+            print("Packet loss simulated.")
+            time.sleep(random.uniform(0.1, 0.5))  # Simulate delay
+            return True
+        return False
+
+    def corrupt_packet(self, packet):
+        # Simulate packet corruption by randomly modifying data
+        corrupted_packet = bytearray(packet)
+        for _ in range(random.randint(1, 5)):  # Randomly select 1 to 5 positions to corrupt
+            position = random.randint(0, len(packet) - 1)
+            corrupted_packet[position] = random.randint(0, 255)  # Modify byte value
+        return bytes(corrupted_packet)
     def _handshake(self):
         print("Trying to connect with server....")
         self._client_socket.sendto(f"Ahlan|{self._connectiontype}".encode(), self._server_address)
